@@ -65,7 +65,7 @@ button:disabled{opacity:.4;cursor:default}
 </main>
 <div class="bar" id="bar" style="display:none"><span id="st"></span> <button id="sub">Nộp bài</button></div>
 <script>
-var ENDPOINT="DÁN_LINK_APPS_SCRIPT_VÀO_ĐÂY";
+var ENDPOINT="https://script.google.com/macros/s/AKfycbzFhnTYr0fPsI8De1c-x3LygNX95F-UkMl51nskoljBm7LrhTmlC_piMCjPQVaHf64x/exec";
 function api(action,p){
  if(ENDPOINT.indexOf('http')!==0)return Promise.reject(new Error('no endpoint'));
  if(action==='config')return fetch(ENDPOINT+'?action=config').then(function(r){return r.json();});
