@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kiểm tra đầu giờ Tuần 4 - QTTCTDNTM</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;line-height:1.5}
+header{background:#000;color:#fff;padding:26px 16px;text-align:center}
+header h1{margin:0;font-size:25px}
+header p{margin:6px 0 0;font-size:14px;color:#ddd}
+main{max-width:760px;margin:0 auto;padding:20px 16px 90px}
+.box{border:2px solid #000;padding:14px 16px;margin:16px 0}
+.box h2{margin:0 0 8px;font-size:19px}
+.f{display:block;margin:12px 0 4px;font-weight:bold;font-size:14px}
+input[type=text],select{width:100%;border:2px solid #000;background:#fff;color:#000;padding:10px;font-size:16px}
+input:focus,select:focus,button:focus{outline:3px solid #000;outline-offset:2px}
+button{background:#000;color:#fff;border:2px solid #000;padding:12px 26px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:14px}
+button.w{background:#fff;color:#000;padding:7px 14px;font-size:14px;margin:4px 4px 0 0}
+button:disabled{opacity:.4;cursor:default}
+#lmsg{font-weight:bold;margin:10px 0 0;min-height:22px}
+.q{border:2px solid #000;padding:14px 16px;margin:14px 0}
+.q h3{margin:0 0 6px;font-size:16px}
+.tag{font-size:12px;border:1px solid #000;padding:1px 7px;margin-left:8px;font-weight:normal}
+.opt{display:block;border:1px solid #000;padding:8px 10px;margin:6px 0;cursor:pointer}
+.opt input{margin-right:8px}
+.num{width:180px;display:inline-block}
+.fb{display:none;margin-top:8px;padding-top:8px;border-top:1px dashed #000;font-size:14px}
+.rv .fb{display:block}
+.ok{font-weight:bold}
+.bad{text-decoration:underline;font-weight:bold}
+.opt.right{font-weight:bold;border-width:3px}
+.opt.wrong{text-decoration:line-through}
+.info{display:flex;flex-wrap:wrap;gap:6px 20px;border:2px solid #000;padding:10px 14px;font-size:14px}
+#sum{display:none;background:#000;color:#fff}
+#sum h2,#sum p{color:#fff;margin:4px 0}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:3px solid #000;padding:10px 16px;text-align:center;z-index:5}
+.bar button{margin:0}
+#demo{background:#eee;border-style:dashed}
+</style>
+</head>
+<body>
+<header><h1>Kiểm tra đầu giờ Tuần 4 - QTTCTDNTM</h1><p>Quản trị tài chính trong doanh nghiệp thương mại</p></header>
+<main>
+
+<section id="vLogin">
+ <div class="box">
+  <h2>Đăng nhập</h2>
+  <p>Nhập đúng Họ và tên, Mã sinh viên và Lớp học phần để làm bài kiểm tra. Bài gồm <b>5 câu</b> (2 câu lý thuyết, 3 câu tính toán), mỗi câu 1 điểm. Bạn <b>chỉ được làm bài một lần duy nhất</b>; điểm và đáp án chỉ hiển thị sau khi nộp bài.</p>
+  <p id="dl"><b>Đang kết nối máy chủ...</b></p>
+  <label class="f" for="hten">Họ và tên</label><input type="text" id="hten" autocomplete="off">
+  <label class="f" for="msv">Mã sinh viên</label><input type="text" id="msv" autocomplete="off" inputmode="numeric">
+  <label class="f" for="lop">Lớp học phần</label><select id="lop"><option value="">-- Chọn lớp học phần --</option></select>
+  <button id="go" disabled>Đăng nhập</button>
+  <p id="lmsg"></p>
+ </div>
+</section>
+<section id="vTest" style="display:none">
+ <div class="info" id="info"></div>
+ <div class="box" id="intro"><b>Hướng dẫn:</b> chọn một đáp án đúng cho câu lý thuyết; với câu tính toán nhập kết quả bằng số (dấu phẩy hoặc dấu chấm thập phân đều được), làm tròn 2 chữ số thập phân, không cần ghi đơn vị. Quy ước: 1 năm = 360 ngày, giá trị bình quân = (đầu kỳ + cuối kỳ)/2. Nộp bài xong sẽ không sửa được.</div>
+ <div class="box" id="sum"></div>
+ <div id="qs"></div>
+</section>
+</main>
+<div class="bar" id="bar" style="display:none"><span id="st"></span> <button id="sub">Nộp bài</button></div>
+<script>
+var ENDPOINT="DÁN_LINK_APPS_SCRIPT_VÀO_ĐÂY";
+function api(action,p){
+ if(ENDPOINT.indexOf('http')!==0)return Promise.reject(new Error('no endpoint'));
+ if(action==='config')return fetch(ENDPOINT+'?action=config').then(function(r){return r.json();});
+ return fetch(ENDPOINT,{method:'POST',body:JSON.stringify(Object.assign({action:action},p||{}))}).then(function(r){return r.json();});
+}
+
+function fnv(s){var h=2166136261>>>0;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}return h>>>0;}
+function rngOf(seed){var a=fnv(seed);return function(){a=(a+0x6D2B79F5)|0;var t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+function shuffle(arr,r){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(r()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function pickSet(seed,BANK){
+ var r=rngOf(seed),out=[];
+ var tg=shuffle(['tt','lc','no','sl','tg','bs'],r).slice(0,2);
+ var cg=shuffle(['tt','lc','no','sl','tg'],r).slice(0,3);
+ tg.forEach(function(g){var pool=BANK.mc.filter(function(q){return q.g===g;});out.push({id:pool[Math.floor(r()*pool.length)].id,perm:shuffle([0,1,2,3],r)});});
+ cg.forEach(function(g){var pool=BANK.fill.filter(function(q){return q.g===g;});out.push({id:pool[Math.floor(r()*pool.length)].id,perm:null});});
+ return out;
+}
+function findQ(BANK,id){for(var i=0;i<BANK.mc.length;i++)if(BANK.mc[i].id===id)return BANK.mc[i];for(var j=0;j<BANK.fill.length;j++)if(BANK.fill[j].id===id)return BANK.fill[j];return null;}
+function questionsOf(set,BANK){
+ return set.map(function(s){var q=findQ(BANK,s.id);
+  if(s.perm)return {id:q.id,t:'mc',q:q.q,o:s.perm.map(function(i){return {k:'ABCD'.charAt(i),x:q.o[i]};})};
+  return {id:q.id,t:'fill',q:q.q,u:q.u};});
+}
+function pn(s){s=String(s).trim().replace(/\s/g,'').replace('%','');if(!s)return NaN;
+ if(s.indexOf(',')>=0)s=s.replace(/\./g,'').replace(',','.');
+ else if(/^-?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'');
+ return parseFloat(s);}
+function dec(s){var i=s.indexOf(',');return i<0?0:s.length-i-1;}
+function gradeSet(set,answers,BANK){
+ var res=[],score=0;
+ set.forEach(function(s){var q=findQ(BANK,s.id),mine=(answers&&answers[s.id]!==undefined)?String(answers[s.id]):'',ok=false,right;
+  if(s.perm){right='ABCD'.charAt(q.a);ok=(mine===right);}
+  else{right=q.a;var x=pn(mine),e=pn(q.a),t=Math.pow(10,-dec(q.a))+1e-9;ok=!isNaN(x)&&Math.abs(x-e)<=t;}
+  if(ok)score++;
+  res.push({id:s.id,ok:ok,mine:mine,right:right,ex:q.ex});});
+ return {score:score,total:set.length,res:res};
+}
+function reviewOf(set,answers,name,BANK){
+ var g=gradeSet(set,answers,BANK);
+ return {ok:true,mode:'review',name:name,qs:questionsOf(set,BANK),res:g.res,score:g.score,total:g.total,scale10:Math.round(g.score/g.total*100)/10};
+}
+
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+var S={u:null,qs:[],seed:'',teacher:false,CFG:null};
+function view(v){$('vLogin').style.display=v==='login'?'block':'none';$('vTest').style.display=v==='test'?'block':'none';window.scrollTo(0,0);}
+function msg(t){$('lmsg').textContent=t||'';}
+function loadCfg(){
+ $('dl').innerHTML='<b>Đang kết nối máy chủ...</b>';
+ api('config').then(function(c){
+  if(!c||!c.ok)throw 0;S.CFG=c;
+  var t='Hạn nộp bài: '+(c.deadlineText||'chưa đặt hạn')+'. ';t+=c.closed?(c.reason==='closed'?'Bài kiểm tra đã được giảng viên đóng.':'Đã hết hạn nộp bài.'):'Hiện đang mở.';
+  $('dl').innerHTML='<b>'+esc(t)+'</b>';
+  var s=$('lop');s.innerHTML='';s.appendChild(new Option('-- Chọn lớp học phần --',''));(c.classes||[]).forEach(function(x){s.appendChild(new Option(x,x));});
+  $('go').disabled=false;
+ }).catch(function(){$('dl').innerHTML='<b>Không kết nối được máy chủ. Kiểm tra mạng rồi tải lại trang.</b>';});
+}
+function renderQs(qs,review,res){
+ var h='';
+ qs.forEach(function(q,i){
+  var r=res?res[i]:null;
+  h+='<div class="q'+(review?' rv':'')+'" id="q'+i+'"><h3>Câu '+(i+1)+'<span class="tag">'+(q.t==='mc'?'Lý thuyết':'Tính toán')+' · 1 điểm</span></h3><p>'+esc(q.q)+'</p>';
+  if(q.t==='mc'){
+   q.o.forEach(function(o,j){
+    var L='ABCD'.charAt(j),cls='opt',chk='';
+    if(review){if(o.k===r.right)cls+=' right';else if(o.k===r.mine)cls+=' wrong';if(o.k===r.mine)chk=' checked';}
+    h+='<label class="'+cls+'"><input type="radio" name="a'+i+'" value="'+o.k+'"'+chk+(review?' disabled':'')+'>'+L+'. '+esc(o.x)+(review&&o.k===r.right?'  ✓':'')+'</label>';
+   });
+  }else{
+   h+='<input type="text" class="num" id="n'+i+'" autocomplete="off" inputmode="decimal" placeholder="đáp số"'+(review?' disabled value="'+esc(r.mine)+'"':'')+'> <span>('+esc(q.u)+')</span>';
+  }
+  if(review){
+   var rt=q.t==='mc'?(function(){var L2='';q.o.forEach(function(o,j){if(o.k===r.right)L2='ABCD'.charAt(j)+'. '+o.x;});return L2;})():r.right+' '+q.u;
+   h+='<div class="fb"><div class="'+(r.ok?'ok':'bad')+'">'+(r.ok?'✓ Đúng (+1 điểm)':'✗ Sai (0 điểm)')+'</div><div>Đáp án đúng: <b>'+esc(rt)+'</b></div><div>'+(q.t==='mc'?'Công thức: ':'Cách tính: ')+esc(r.ex)+'</div></div>';
+  }
+  h+='</div>';
+ });
+ $('qs').innerHTML=h;
+}
+function dkey(){return 'dr4_'+S.u.msv+'_'+S.seed;}
+function collect(){var a={};S.qs.forEach(function(q,i){if(q.t==='mc'){var el=document.querySelector('input[name="a'+i+'"]:checked');a[q.id]=el?el.value:'';}else{a[q.id]=$('n'+i).value;}});return a;}
+function saveDraft(){try{localStorage.setItem(dkey(),JSON.stringify(collect()));}catch(e){}}
+function restoreDraft(){try{var d=JSON.parse(localStorage.getItem(dkey())||'null');if(!d)return;S.qs.forEach(function(q,i){var v=d[q.id];if(!v)return;if(q.t==='mc'){var el=document.querySelector('input[name="a'+i+'"][value="'+v+'"]');if(el)el.checked=true;}else{$('n'+i).value=v;}});}catch(e){}}
+document.addEventListener('input',saveAny);document.addEventListener('change',saveAny);
+function saveAny(ev){if(S.u&&$('bar').style.display!=='none'&&ev.target.closest&&ev.target.closest('#qs'))saveDraft();}
+function infoBar(){$('info').innerHTML='<span><b>Họ và tên:</b> '+esc(S.u.name)+'</span><span><b>MSSV:</b> '+esc(S.u.msv)+'</span><span><b>Lớp:</b> '+esc(S.u.lop)+'</span>'+(S.teacher?'<span><b>Chế độ giảng viên</b>: được làm lại nhiều lần</span>':'');}
+function enterTest(r){
+ S.qs=r.qs;S.seed=r.seed||'';infoBar();$('sum').style.display='none';$('intro').style.display='block';
+ renderQs(r.qs,false,null);restoreDraft();$('bar').style.display='block';$('st').textContent='';$('sub').disabled=false;view('test');
+}
+function enterReview(r){
+ S.qs=r.qs;infoBar();$('intro').style.display='none';$('bar').style.display='none';
+ renderQs(r.qs,true,r.res);
+ var s=$('sum');s.style.display='block';
+ s.innerHTML='<h2>Kết quả của '+esc(r.name)+'</h2><p style="font-size:22px"><b>'+r.score+'/'+r.total+' điểm</b> (quy đổi thang 10: <b>'+String(r.scale10).replace('.',',')+'</b>)</p><p>Bài làm của bạn đã được ghi nhận cho giảng viên. Điểm được tính theo lần làm bài đầu tiên.</p>'+(S.teacher?'<button class="w" id="again">Làm bài mới (giảng viên)</button>':'');
+ if(S.teacher)$('again').onclick=function(){doLogin(true);};
+ view('test');
+}
+function doLogin(again){
+ var name=again&&S.u?S.u.name:$('hten').value.trim(),msv=again&&S.u?S.u.msv:$('msv').value.trim(),lop=again&&S.u?S.u.lop:$('lop').value;
+ if(!name||!msv||!lop){msg('Vui lòng nhập đủ Họ và tên, Mã sinh viên và chọn Lớp học phần.');return;}
+ $('go').disabled=true;msg('Đang kiểm tra thông tin...');
+ api('login',{name:name,msv:msv,lop:lop}).then(function(r){
+  $('go').disabled=false;
+  if(!r||!r.ok){msg((r&&r.msg)||'Thông tin không hợp lệ.');if(again)view('login');return;}
+  S.u={name:r.name,msv:msv,lop:lop};S.teacher=!!r.teacher;
+  if(r.mode==='locked'){msg('Đã hết hạn nộp bài và bạn chưa nộp bài nên không thể làm bài kiểm tra.');return;}
+  msg('');
+  if(r.mode==='work')enterTest(r);else enterReview(r);
+ }).catch(function(){$('go').disabled=false;msg('Lỗi kết nối. Vui lòng thử lại.');});
+}
+$('go').onclick=function(){doLogin(false);};
+$('sub').onclick=function(){
+ var a=collect(),n=0;S.qs.forEach(function(q){if(!a[q.id])n++;});
+ if(!confirm('Bạn chỉ được nộp bài MỘT LẦN'+(S.teacher?' (giảng viên được làm lại)':'')+', nộp xong không thể sửa.'+(n>0?'\nCòn '+n+' câu chưa trả lời.':'')+'\nXác nhận nộp bài?'))return;
+ $('sub').disabled=true;$('st').textContent='Đang nộp bài... ';
+ api('submit',{name:S.u.name,msv:S.u.msv,lop:S.u.lop,seed:S.seed,answers:a}).then(function(r){
+  if(r&&r.ok){try{localStorage.removeItem(dkey());}catch(e){}enterReview(r);return;}
+  $('sub').disabled=false;$('st').textContent=((r&&r.msg)||'Nộp bài chưa thành công.')+' ';
+  if(r&&r.code==='closed'){$('bar').style.display='none';view('login');msg(r.msg);loadCfg();}
+ }).catch(function(){$('sub').disabled=false;$('st').textContent='Lỗi kết nối, bài CHƯA được nộp. Hãy bấm Nộp bài lại. ';});
+};
+loadCfg();
+</script>
+</body>
+</html>
